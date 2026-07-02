@@ -1,0 +1,61 @@
+version: "3.8"
+
+services:
+  # =====================================================
+  # MySQL Database
+  # =====================================================
+  mysql:
+    image: mysql:8.0
+    container_name: bragaa_mysql
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_HOST: "%"
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/00-schema.sql:ro
+      - ./migrations:/docker-entrypoint-initdb.d/migrations:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bragaa_net
+
+  # =====================================================
+  # Backend API (Node.js)
+  # =====================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bragaa_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - bragaa_net
+
+volumes:
+  mysql_data:
+  uploads_data:
+
+networks:
+  bragaa_net:
+    driver: bridge
