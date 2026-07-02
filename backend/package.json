@@ -10,6 +10,7 @@
     "migrate": "npm run db:ensure && node src/scripts/migrate.js",
     "migrate:fresh": "node src/scripts/migrateFresh.js",
     "migrate:status": "node src/scripts/migrationStatus.js",
+    "seed": "node src/scripts/seed.js",
     "consultations:reset": "node src/scripts/resetConsultations.js"
   },
   "dependencies": {
