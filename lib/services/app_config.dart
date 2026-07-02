@@ -5,9 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AppConfig {
   static const String _backendUrlPreferenceKey = 'backend_base_url';
-  static const String _webBaseUrl = 'http://127.0.0.1:3000';
-  static const String _physicalMobileBaseUrl = 'http://192.168.100.205:3000';
-  static const String _emulatorMobileBaseUrl = 'http://10.0.2.2:3000';
+  static const String _webBaseUrl = 'https://pui.surly.my.id';
+  static const String _physicalMobileBaseUrl = 'https://pui.surly.my.id';
+  static const String _emulatorMobileBaseUrl = 'https://pui.surly.my.id';
   static const String _dartDefineBaseUrl = String.fromEnvironment(
     'PUIMEY_API_BASE_URL',
     defaultValue: '',
