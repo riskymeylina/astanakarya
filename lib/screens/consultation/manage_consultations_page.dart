@@ -160,7 +160,47 @@ class _ManageConsultationsPageState
     }).toList();
 
     filtered.sort((a, b) => _sortDate(b).compareTo(_sortDate(a)));
-    return filtered;
+
+    final Map<int, ConsultationRequestModel> grouped = {};
+    for (final c in filtered) {
+      if (!grouped.containsKey(c.buyerUserId)) {
+        grouped[c.buyerUserId] = c;
+      } else {
+        final existing = grouped[c.buyerUserId]!;
+        grouped[c.buyerUserId] = ConsultationRequestModel(
+          id: existing.id,
+          buyerUserId: existing.buyerUserId,
+          buyerName: existing.buyerName,
+          buyerPhone: existing.buyerPhone,
+          buyerEmail: existing.buyerEmail,
+          buyerWhatsapp: existing.buyerWhatsapp,
+          propertyId: existing.propertyId,
+          propertyTitle: existing.propertyTitle,
+          propertyLocation: existing.propertyLocation,
+          topic: existing.topic,
+          preferredContactMethod: existing.preferredContactMethod,
+          message: existing.message,
+          status: existing.status,
+          staffNotes: existing.staffNotes,
+          processedByUserId: existing.processedByUserId,
+          processedByName: existing.processedByName,
+          processedAt: existing.processedAt,
+          createdAt: existing.createdAt,
+          updatedAt: existing.updatedAt,
+          lastMessage: existing.lastMessage ?? existing.message,
+          lastMessageAt: existing.lastMessageAt ?? existing.createdAt,
+          lastMessageSenderUserId: existing.lastMessageSenderUserId,
+          lastMessageReadAt: existing.lastMessageReadAt,
+          unreadCount: existing.unreadCount + c.unreadCount,
+          surveyId: existing.surveyId,
+          surveyStatus: existing.surveyStatus,
+          surveyDate: existing.surveyDate,
+          surveyTime: existing.surveyTime,
+        );
+      }
+    }
+
+    return grouped.values.toList();
   }
 
   DateTime _sortDate(ConsultationRequestModel c) =>
@@ -498,7 +538,7 @@ class _ConsultationTile extends StatelessWidget {
   ];
 
   Color get _avatarColor =>
-      _avatarColors[consultation.id % _avatarColors.length];
+      _avatarColors[consultation.buyerUserId % _avatarColors.length];
 
   @override
   Widget build(BuildContext context) {

@@ -33,6 +33,7 @@ class _ConsultationDetailPageState extends State<ConsultationDetailPage> {
   String? _errorMessage;
   String? _chatErrorMessage;
   ConsultationRequestModel? _consultation;
+  List<ConsultationRequestModel> _buyerConsultations = const [];
   List<ConsultationChatMessageModel> _messages = const [];
   int? _currentUserId;
   String _currentUserRole = '';
@@ -88,6 +89,7 @@ class _ConsultationDetailPageState extends State<ConsultationDetailPage> {
   }
 
   Future<void> _loadMessages({bool silent = false}) async {
+    if (_consultation == null) return;
     if (!silent) {
       setState(() {
         _isLoadingMessages = true;
@@ -95,56 +97,101 @@ class _ConsultationDetailPageState extends State<ConsultationDetailPage> {
       });
     }
 
-    final response = await _consultationService.getConsultationMessages(
-      widget.consultationId,
-    );
+    final isStaff = _currentUserRole == 'staf' || _currentUserRole == 'admin';
+    final listResponse = isStaff
+        ? await _consultationService.getStaffConsultationRequests()
+        : await _consultationService.getMyConsultationRequests();
+
     if (!mounted) return;
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
+    if (listResponse.statusCode < 200 || listResponse.statusCode >= 300) {
       setState(() {
-        _chatErrorMessage = _consultationService.parseMessage(response.body);
+        _chatErrorMessage = _consultationService.parseMessage(listResponse.body);
         _isLoadingMessages = false;
       });
       return;
     }
 
-    setState(() {
-      final parsedMessages = _consultationService.parseMessages(response.body);
-      
-      // Inject initial consultation message if not empty (exclude general CS rooms)
-      if (_consultation != null && _consultation!.message.isNotEmpty) {
-        final isGeneralCS = _consultation!.propertyId == null && _consultation!.topic == 'Konsultasi umum';
-        
-        if (isGeneralCS) {
-          _messages = parsedMessages;
-        } else {
-          final initialMessage = ConsultationChatMessageModel(
-            id: 0,
-            consultationId: _consultation!.id,
-            senderUserId: _consultation!.buyerUserId,
-            senderName: _consultation!.buyerName,
-            senderRole: 'pembeli',
-            messageType: 'text',
-            message: _consultation!.message,
-            mediaUrl: null,
-            mediaName: null,
-            mediaMime: null,
-            createdAt: _consultation!.createdAt ?? '',
-            readAt: null,
-          );
-          
-          if (parsedMessages.isEmpty || parsedMessages.first.message != _consultation!.message) {
-             _messages = [initialMessage, ...parsedMessages];
-          } else {
-             _messages = parsedMessages;
+    final allCons = _consultationService.parseConsultations(listResponse.body);
+    final targetBuyerUserId = _consultation!.buyerUserId;
+    final filteredCons = allCons.where((c) => c.buyerUserId == targetBuyerUserId).toList();
+
+    _buyerConsultations = filteredCons;
+
+    try {
+      final futures = filteredCons.map((c) => _consultationService.getConsultationMessages(c.id)).toList();
+      final responses = await Future.wait(futures);
+
+      if (!mounted) return;
+
+      final List<ConsultationChatMessageModel> allParsedMessages = [];
+
+      for (int i = 0; i < filteredCons.length; i++) {
+        final c = filteredCons[i];
+        final resp = responses[i];
+
+        if (resp.statusCode >= 200 && resp.statusCode < 300) {
+          final parsed = _consultationService.parseMessages(resp.body);
+
+          // Inject initial message if not empty
+          if (c.message.isNotEmpty) {
+            final isGeneralCS = c.propertyId == null && c.topic == 'Konsultasi umum';
+            final initialMessage = isGeneralCS
+                ? ConsultationChatMessageModel(
+                    id: 0,
+                    consultationId: c.id,
+                    senderUserId: c.processedByUserId ?? 0,
+                    senderName: c.processedByName ?? 'Staf Pemasaran',
+                    senderRole: 'staf',
+                    messageType: 'text',
+                    message: c.message,
+                    mediaUrl: null,
+                    mediaName: null,
+                    mediaMime: null,
+                    createdAt: c.createdAt ?? '',
+                    readAt: null,
+                  )
+                : ConsultationChatMessageModel(
+                    id: 0,
+                    consultationId: c.id,
+                    senderUserId: c.buyerUserId,
+                    senderName: c.buyerName,
+                    senderRole: 'pembeli',
+                    messageType: 'text',
+                    message: c.message,
+                    mediaUrl: null,
+                    mediaName: null,
+                    mediaMime: null,
+                    createdAt: c.createdAt ?? '',
+                    readAt: null,
+                  );
+
+            if (parsed.isEmpty || parsed.first.message != c.message) {
+              allParsedMessages.add(initialMessage);
+            }
           }
+          allParsedMessages.addAll(parsed);
         }
-      } else {
-        _messages = parsedMessages;
       }
-      
-      _isLoadingMessages = false;
-    });
+
+      // Sort chronologically by createdAt
+      allParsedMessages.sort((a, b) {
+        final timeA = DateTime.tryParse(a.createdAt ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final timeB = DateTime.tryParse(b.createdAt ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return timeA.compareTo(timeB);
+      });
+
+      setState(() {
+        _messages = allParsedMessages;
+        _isLoadingMessages = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _chatErrorMessage = 'Terjadi kesalahan saat memuat pesan chat';
+        _isLoadingMessages = false;
+      });
+    }
   }
 
   Future<void> _pickAndSendImage() async {
@@ -243,7 +290,7 @@ class _ConsultationDetailPageState extends State<ConsultationDetailPage> {
 
     setState(() => _isUploadingMedia = true);
     final response = await _consultationService.sendConsultationMedia(
-      consultationId: widget.consultationId,
+      consultationId: _activeSendConsultationId,
       mediaFile: picked,
       message: _chatController.text.trim(),
     );
@@ -302,7 +349,7 @@ class _ConsultationDetailPageState extends State<ConsultationDetailPage> {
 
     setState(() => _isUploadingMedia = true);
     final response = await _consultationService.sendConsultationPickedFile(
-      consultationId: widget.consultationId,
+      consultationId: _activeSendConsultationId,
       file: file,
       message: _chatController.text.trim(),
     );
@@ -340,7 +387,7 @@ class _ConsultationDetailPageState extends State<ConsultationDetailPage> {
 
     setState(() => _isSendingMessage = true);
     final response = await _consultationService.sendConsultationMessage(
-      consultationId: widget.consultationId,
+      consultationId: _activeSendConsultationId,
       message: text,
     );
     if (!mounted) return;
@@ -399,6 +446,20 @@ class _ConsultationDetailPageState extends State<ConsultationDetailPage> {
   int? _toInt(Object? value) {
     if (value is num) return value.toInt();
     return int.tryParse(value?.toString() ?? '');
+  }
+
+  int get _activeSendConsultationId {
+    if (_buyerConsultations.isEmpty) return widget.consultationId;
+    
+    final active = _buyerConsultations.where((c) => c.status != 'resolved' && c.status != 'rejected').toList();
+    if (active.isNotEmpty) {
+      active.sort((a, b) => b.id.compareTo(a.id));
+      return active.first.id;
+    }
+    
+    final sorted = List<ConsultationRequestModel>.from(_buyerConsultations);
+    sorted.sort((a, b) => b.id.compareTo(a.id));
+    return sorted.first.id;
   }
 
   Future<void> _showStatusUpdateDialog(ConsultationRequestModel consultation) async {
@@ -896,7 +957,7 @@ class _ConsultationDetailPageState extends State<ConsultationDetailPage> {
       widgets.add(
         _ChatBubble(
           message: message,
-          mine: message.senderRole.toLowerCase() == 'pembeli',
+          mine: message.senderUserId == _currentUserId,
           formatTime: _formatChatTime,
         ),
       );
