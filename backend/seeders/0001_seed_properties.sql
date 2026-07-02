@@ -89,11 +89,26 @@ INSERT INTO property_gallery_images (property_id, image_url, title, subtitle, de
   (@first_property_id + 6, 'https://images.unsplash.com/photo-1449844908441-8829872d2607?auto=format&fit=crop&w=1200&q=80', 'Carport', 'Eksterior', 'Carport/garasi', '', 6);
 
 -- -----------------------------------------------
--- 3. SEED: Default Users (admin & staf)
+-- 3. SEED: Default Users (admin, staf, pembeli)
 --    Password: password123 (bcrypt hash)
+--    Menggunakan ID eksplisit agar konsisten dengan testing session
 -- -----------------------------------------------
-INSERT INTO users (name, email, phone, password_hash, role) VALUES
-  ('Admin', 'admin@gmail.com', '012345678901', '$2b$10$EIXe0CsMqS5XR2OJGvxKYeJZ7RqUvK9f4PdWQg9X2O7F6R5mXh1Zy', 'admin'),
-  ('Staf',  'staf@gmail.com',  '098765432109', '$2b$10$EIXe0CsMqS5XR2OJGvxKYeJZ7RqUvK9f4PdWQg9X2O7F6R5mXh1Zy', 'staf');
+INSERT INTO users (id_user, name, email, phone, password_hash, role) VALUES
+  (1, 'Admin', 'admin@gmail.com', '012345678901', '$2b$10$Beqsvmfn2rPP4ZucjJffB.UU1.oCWfUUfI3xqVJ.PfzF.Xmrkx4xW', 'admin'),
+  (2, 'Staf',  'staf@gmail.com',  '098765432109', '$2b$10$Beqsvmfn2rPP4ZucjJffB.UU1.oCWfUUfI3xqVJ.PfzF.Xmrkx4xW', 'staf'),
+  (6, 'Rony Parulian', 'roni@gmail.com', '085158266890', '$2b$10$Beqsvmfn2rPP4ZucjJffB.UU1.oCWfUUfI3xqVJ.PfzF.Xmrkx4xW', 'pembeli');
+
+-- -----------------------------------------------
+-- 4. SEED: Property Consultations
+-- -----------------------------------------------
+INSERT INTO property_consultation_requests (id_property_consultation_request, buyer_user_id, property_id, topic, preferred_contact_method, message, status, staff_notes, processed_by_user_id, processed_at) VALUES
+  (2, 6, @first_property_id + 1, 'Simulasi KPR', 'Telepon', 'Mohon dibantu hitung simulasi KPR dan estimasi biaya awal untuk properti ini.', 'contacted', 'Sudah dihubungi dan diarahkan untuk menyiapkan dokumen penghasilan.', 2, NOW());
+
+-- -----------------------------------------------
+-- 5. SEED: Consultation Messages (Chat)
+-- -----------------------------------------------
+INSERT INTO consultation_messages (id_consultation_message, consultation_id, sender_user_id, sender_name, sender_role, message_type, message) VALUES
+  (1, 2, 6, 'Rony Parulian', 'pembeli', 'text', 'Mohon dibantu hitung simulasi KPR dan estimasi biaya awal untuk properti ini.'),
+  (2, 2, 2, 'Staf', 'staf', 'text', 'Halo Kak Rony, baik mohon ditunggu sebentar ya saya hitungkan dahulu.');
 
 COMMIT;

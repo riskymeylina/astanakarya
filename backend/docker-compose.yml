@@ -18,7 +18,6 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./schema.sql:/docker-entrypoint-initdb.d/00-schema.sql:ro
       - ./migrations:/docker-entrypoint-initdb.d/migrations:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -35,7 +34,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: bragaa_backend
+    container_name: bragaa-backend
     restart: unless-stopped
     env_file:
       - .env
@@ -51,6 +50,7 @@ services:
       - uploads_data:/app/uploads
     networks:
       - bragaa_net
+      - local-dev
 
 volumes:
   mysql_data:
@@ -59,3 +59,5 @@ volumes:
 networks:
   bragaa_net:
     driver: bridge
+  local-dev:
+    external: true

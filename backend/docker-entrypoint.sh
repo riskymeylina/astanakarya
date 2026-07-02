@@ -12,6 +12,10 @@ echo "[entrypoint] MySQL siap. Menjalankan migration..."
 
 npm run migrate
 
-echo "[entrypoint] Migration selesai. Menjalankan server..."
+echo "[entrypoint] Menjalankan seeder..."
+
+npm run seed
+
+echo "[entrypoint] Migration dan seeder selesai. Menjalankan server..."
 
 exec node src/server.js
