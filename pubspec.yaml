@@ -1,0 +1,68 @@
+name: mobile
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  geolocator: ^14.0.3
+  geocoding: ^4.0.0
+  url_launcher: ^6.3.1
+  image_picker: ^1.1.2
+  image: ^4.1.0
+  http: ^1.3.0
+  http_parser: ^4.1.2
+  shared_preferences: ^2.5.3
+  flutter_secure_storage: ^10.3.1
+  device_info_plus: ^13.2.0
+  intl: ^0.20.2
+  permission_handler: ^12.0.3
+  pdf: ^3.12.0
+  printing: ^5.14.3
+  file_picker: ^12.0.0-beta.7
+  cached_network_image: ^3.2.3
+  photo_view: ^0.15.0
+  network_info_plus: ^8.2.0
+  fl_chart: ^1.2.0
+  excel: ^4.0.6
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+
+  fonts:
+    - family: TomatoGrotesk
+      fonts:
+        - asset: assets/fonts/TomatoGrotesk-Thin.otf
+          weight: 100
+        - asset: assets/fonts/TomatoGrotesk-ExtraLight.otf
+          weight: 200
+        - asset: assets/fonts/TomatoGrotesk-Light.otf
+          weight: 300
+        - asset: assets/fonts/TomatoGrotesk-Regular.otf
+          weight: 400
+        - asset: assets/fonts/TomatoGrotesk-Medium.otf
+          weight: 500
+        - asset: assets/fonts/TomatoGrotesk-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/TomatoGrotesk-Bold.otf
+          weight: 700
+        - asset: assets/fonts/TomatoGrotesk-ExtraBold.otf
+          weight: 800
+        - asset: assets/fonts/TomatoGrotesk-Black.otf
+          weight: 900
