@@ -269,11 +269,11 @@ async function uploadPaymentProof(req, res, next) {
       throw createError('Anda tidak memiliki akses ke pemesanan ini', 403);
     }
 
-    if (purchase.status !== 'pending_payment') {
+    if (purchase.status !== 'pending_payment' && purchase.status !== 'rejected') {
       throw createError(
         purchase.status === 'cancelled'
           ? 'Pesanan otomatis dibatalkan karena melewati batas waktu pembayaran'
-          : 'Bukti pembayaran hanya dapat diunggah saat status masih "Menunggu Pembayaran"',
+          : 'Bukti pembayaran hanya dapat diunggah saat status masih "Menunggu Pembayaran" atau "Ditolak"',
         400,
       );
     }

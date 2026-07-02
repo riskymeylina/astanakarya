@@ -196,7 +196,7 @@ async function loginUser({ email, password }) {
 
 async function findLatestPasswordResetRequestByUserId(userId) {
   const [rows] = await pool.execute(
-    `SELECT id, user_id, code_hash, expires_at, verified_at, consumed_at, attempt_count,
+    `SELECT user_id AS id, code_hash, expires_at, verified_at, consumed_at, attempt_count,
             last_sent_at, reset_session_token_hash, reset_session_expires_at, created_at, updated_at
      FROM password_reset_requests
      WHERE user_id = ? AND consumed_at IS NULL
@@ -236,10 +236,10 @@ async function createPasswordResetRequest({ userId, codeHash, expiresAt }) {
 
 async function findPasswordResetRequestById(id) {
   const [rows] = await pool.execute(
-    `SELECT id, user_id, code_hash, expires_at, verified_at, consumed_at, attempt_count,
+    `SELECT user_id AS id, code_hash, expires_at, verified_at, consumed_at, attempt_count,
             last_sent_at, reset_session_token_hash, reset_session_expires_at, created_at, updated_at
      FROM password_reset_requests
-     WHERE id = ?
+     WHERE user_id = ?
      LIMIT 1`,
     [id],
   );
@@ -266,7 +266,7 @@ async function markPasswordResetVerified(requestId, resetSessionTokenHash, reset
          reset_session_token_hash = ?,
          reset_session_expires_at = ?,
          updated_at = CURRENT_TIMESTAMP
-     WHERE id = ?`,
+     WHERE user_id = ?`,
     [resetSessionTokenHash, resetSessionExpiresAt, requestId],
   );
 
@@ -275,7 +275,7 @@ async function markPasswordResetVerified(requestId, resetSessionTokenHash, reset
 
 async function findValidPasswordResetSession(userId, resetSessionTokenHash) {
   const [rows] = await pool.execute(
-    `SELECT id, user_id, code_hash, expires_at, verified_at, consumed_at, attempt_count,
+    `SELECT user_id AS id, code_hash, expires_at, verified_at, consumed_at, attempt_count,
             last_sent_at, reset_session_token_hash, reset_session_expires_at, created_at, updated_at
      FROM password_reset_requests
      WHERE user_id = ?
@@ -297,7 +297,7 @@ async function consumePasswordResetRequest(requestId) {
     `UPDATE password_reset_requests
      SET consumed_at = NOW(),
          updated_at = CURRENT_TIMESTAMP
-     WHERE id = ?`,
+     WHERE user_id = ?`,
     [requestId],
   );
 }

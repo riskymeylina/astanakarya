@@ -48,7 +48,7 @@ const uploadProfilePhoto = multer({
 // --- Property Images Upload ---
 const propertyStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    let uploadPath = path.join(__dirname, '../../public/uploads/properties');
+    let uploadPath = path.join(__dirname, '../../uploads/properties');
     
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });

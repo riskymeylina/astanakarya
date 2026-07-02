@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const pool = require('../config/db');
 
 function normalizeTextFilter(value) {
@@ -205,38 +207,53 @@ async function findPropertyGalleryByPropertyId(id) {
 
 async function addImage(propertyId, imageUrl, displayOrder, isPrimary) {
   const [result] = await pool.execute(
-    `INSERT INTO property_images (property_id, image_url, display_order, is_primary)
-     VALUES (?, ?, ?, ?)`,
-    [propertyId, imageUrl, displayOrder, isPrimary]
+    "INSERT INTO property_gallery_images (property_id, image_url, sort_order, title, subtitle, detail_primary, detail_secondary) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [propertyId, imageUrl, displayOrder || 1, "Foto", "", "", ""]
   );
   return {
     id: result.insertId,
     propertyId,
     imageUrl,
-    displayOrder,
-    isPrimary
+    displayOrder
   };
 }
 
 async function findImageById(imageId) {
   const [rows] = await pool.execute(
-    `SELECT id, property_id, image_url, display_order, is_primary FROM property_images WHERE id = ?`,
+    "SELECT id_property_gallery_image AS id, property_id, image_url, sort_order as display_order FROM property_gallery_images WHERE id_property_gallery_image = ?",
     [imageId]
   );
   return rows[0] || null;
 }
 
 async function deleteImage(imageId) {
-  await pool.execute(`DELETE FROM property_images WHERE id = ?`, [imageId]);
+  const [rows] = await pool.execute(
+    "SELECT image_url FROM property_gallery_images WHERE id_property_gallery_image = ?",
+    [imageId]
+  );
+  const imageUrl = rows[0] && rows[0].image_url;
+
+  await pool.execute("DELETE FROM property_gallery_images WHERE id_property_gallery_image = ?", [imageId]);
+
+  if (imageUrl && imageUrl.startsWith('/uploads/')) {
+    const uploadsRoot = path.join(__dirname, '..', '..', 'uploads');
+    const filePath = path.join(uploadsRoot, imageUrl.replace(/^\/uploads\//, ''));
+    try {
+      fs.unlinkSync(filePath);
+    } catch (err) {
+      if (err.code !== 'ENOENT') {
+        console.warn('[property] gagal menghapus file gambar', { filePath, message: err.message });
+      }
+    }
+  }
 }
 
 async function setPrimaryImage(imageId, propertyId) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    await conn.execute(`UPDATE property_images SET is_primary = FALSE WHERE property_id = ?`, [propertyId]);
-    await conn.execute(`UPDATE property_images SET is_primary = TRUE WHERE id = ?`, [imageId]);
-    
+    await conn.execute("UPDATE property_gallery_images SET sort_order = sort_order + 1 WHERE property_id = ?", [propertyId]);
+    await conn.execute("UPDATE property_gallery_images SET sort_order = 1 WHERE id_property_gallery_image = ?", [imageId]);
     await conn.commit();
   } catch (error) {
     await conn.rollback();

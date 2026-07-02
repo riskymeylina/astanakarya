@@ -192,10 +192,20 @@ async function setPaymentProof({ id, paymentProofPath }) {
     `UPDATE property_purchases
      SET status = 'payment_uploaded',
          payment_proof_path = ?,
-         payment_proof_uploaded_at = NOW()
-     WHERE id_purchase = ? AND status = 'pending_payment'`,
+         payment_proof_uploaded_at = NOW(),
+         rejection_reason = NULL,
+         processed_at = NULL
+     WHERE id_purchase = ? AND status IN ('pending_payment', 'rejected')`,
     [paymentProofPath, id],
   );
+
+  const purchase = await findPurchaseById(id);
+  if (purchase && purchase.status === 'payment_uploaded') {
+    await pool.execute(
+      `UPDATE properties SET status = 'Sedang Dibooking', updated_at = CURRENT_TIMESTAMP WHERE id_property = ?`,
+      [purchase.property_id],
+    );
+  }
   return findPurchaseById(id);
 }
 
@@ -276,3 +286,4 @@ module.exports = {
   findBuyerProfile,
   PAYMENT_BANK_NOTE,
 };
+
